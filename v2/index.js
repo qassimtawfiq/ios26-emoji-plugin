@@ -40,6 +40,17 @@
     });
   }
 
+  function discordEmojiNameFor(surrogate) {
+    try {
+      const unicodeModule = metro.findByProps?.("convertSurrogateToName");
+      const name = unicodeModule?.convertSurrogateToName?.(surrogate, false);
+      if (typeof name === "string" && name.length > 0) return name;
+    } catch {
+      // Keep the Unicode surrogate as the accessible label if lookup is unavailable.
+    }
+    return surrogate;
+  }
+
   function codepointsFor(value) {
     return Array.from(value)
       .map((character) => character.codePointAt(0).toString(16))
@@ -62,12 +73,16 @@
     const src = assetUrlForCodepoints(codepoints);
     if (!src) return { type: "text", content: row.surrogate };
 
+    const name = discordEmojiNameFor(row.surrogate);
     return {
       type: "customEmoji",
       id: "ios26-" + codepoints,
-      alt: row.surrogate,
+      name,
+      alt: name,
       src,
       frozenSrc: src,
+      2: src,
+      3: src,
       ...(row.jumboable ? { jumboable: true } : {}),
     };
   }
@@ -106,11 +121,13 @@
     if (!emojiModule || typeof emojiModule.getEmojiURL !== "function") return;
 
     return patcher.after("getEmojiURL", emojiModule, ([emoji], result) => {
+      if (emoji?.src?.startsWith?.(BASE_URL)) return emoji.src;
+      if (emoji?.frozenSrc?.startsWith?.(BASE_URL)) return emoji.frozenSrc;
+      if (emoji?.[2]?.startsWith?.(BASE_URL)) return emoji[2];
+      if (emoji?.[3]?.startsWith?.(BASE_URL)) return emoji[3];
       if (emoji?.id?.startsWith?.("ios26-")) {
         return assetUrlForCodepoints(emoji.id.slice("ios26-".length)) || result;
       }
-      if (emoji?.src?.startsWith?.(BASE_URL)) return emoji.src;
-      if (emoji?.frozenSrc?.startsWith?.(BASE_URL)) return emoji.frozenSrc;
       return result;
     });
   }
