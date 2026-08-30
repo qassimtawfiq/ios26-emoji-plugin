@@ -3,7 +3,6 @@
 
   const patcher = vendetta.patcher;
   const metro = vendetta.metro;
-  const RNChatModule = getNativeModule("NativeChatModule", "DCDChatManager");
   const BASE_URL = "https://qassimtawfiq.github.io/ios26-emoji-plugin/emoji/";
   const unpatches = [];
 
@@ -22,6 +21,8 @@
     }
     return undefined;
   }
+
+  const RNChatModule = getNativeModule("NativeChatModule", "DCDChatManager");
 
   function patchRows(callback) {
     if (!RNChatModule || typeof RNChatModule.updateRows !== "function") {
@@ -45,21 +46,25 @@
       .join("-");
   }
 
-  function iosAssetUrl(surrogate) {
-    if (typeof surrogate !== "string" || surrogate.length === 0) return null;
-
-    const codepoints = codepointsFor(surrogate);
+  function assetUrlForCodepoints(codepoints) {
+    if (!codepoints) return null;
     const group = codepoints.split("-")[0].slice(0, 4);
     return BASE_URL + group + "/emoji-" + codepoints + ".png";
   }
 
+  function iosAssetUrl(surrogate) {
+    if (typeof surrogate !== "string" || surrogate.length === 0) return null;
+    return assetUrlForCodepoints(codepointsFor(surrogate));
+  }
+
   function replaceEmojiRow(row) {
-    const src = iosAssetUrl(row.surrogate);
+    const codepoints = codepointsFor(row.surrogate);
+    const src = assetUrlForCodepoints(codepoints);
     if (!src) return { type: "text", content: row.surrogate };
 
     return {
       type: "customEmoji",
-      id: "ios26-" + codepointsFor(row.surrogate),
+      id: "ios26-" + codepoints,
       alt: row.surrogate,
       src,
       frozenSrc: src,
@@ -96,6 +101,20 @@
     return content;
   }
 
+  function patchEmojiUrlResolver() {
+    const emojiModule = metro.findByProps?.("getEmojiURL");
+    if (!emojiModule || typeof emojiModule.getEmojiURL !== "function") return;
+
+    return patcher.after("getEmojiURL", emojiModule, ([emoji], result) => {
+      if (emoji?.id?.startsWith?.("ios26-")) {
+        return assetUrlForCodepoints(emoji.id.slice("ios26-".length)) || result;
+      }
+      if (emoji?.src?.startsWith?.(BASE_URL)) return emoji.src;
+      if (emoji?.frozenSrc?.startsWith?.(BASE_URL)) return emoji.frozenSrc;
+      return result;
+    });
+  }
+
   function onLoad() {
     try {
       unpatches.push(patchRows((rows) => {
@@ -105,9 +124,11 @@
           }
         }
       }));
-      console.log("[iOS26Emoji] Loaded. Replacing emoji rows with iOS 26 PNGs.");
+      const emojiUrlPatch = patchEmojiUrlResolver();
+      if (emojiUrlPatch) unpatches.push(emojiUrlPatch);
+      console.log("[iOS26Emoji] Loaded. Rendering Unicode emojis as iOS 26 PNGs.");
     } catch (error) {
-      console.error("[iOS26Emoji] Failed to install PNG row patch", error);
+      console.error("[iOS26Emoji] Failed to install PNG emoji patches", error);
     }
   }
 
