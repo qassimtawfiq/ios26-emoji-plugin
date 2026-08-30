@@ -7,8 +7,9 @@
 			"id": "0"
 		}
 	],
-	"main": "./index.js",
+	"main": "index.js",
 	"revenge": {
 		"icon": "FriendsIcon"
-	}
+	},
+	"hash": "cf0d20786aba91ed4dd1496aa6fae0cf7b24c4f694aa2694a6a3108b51d67572"
 }
