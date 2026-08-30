@@ -1,0 +1,15 @@
+{
+  "name": "iOS 26 Emoji DEBUG",
+  "description": "iOS 26 Emoji renderer with an in-app diagnostic report",
+  "authors": [
+    {
+      "name": "qassimtawfiq",
+      "id": "0"
+    }
+  ],
+  "main": "index.js",
+  "revenge": {
+    "icon": "FriendsIcon"
+  },
+  "hash": "8a1bc4b30ae42e48b7923ee331ba9c589c8b87d0d8f3ba11b5c075fef63256a2"
+}
