@@ -1,15 +1,15 @@
 {
-	"name": "iOS 26 Emoji",
-	"description": "استبدل إيموجيات Discord بإيموجيات iOS 26",
-	"authors": [
-		{
-			"name": "qassimtawfiq",
-			"id": "0"
-		}
-	],
-	"main": "index.js",
-	"revenge": {
-		"icon": "FriendsIcon"
-	},
-	"hash": "cf0d20786aba91ed4dd1496aa6fae0cf7b24c4f694aa2694a6a3108b51d67572"
+  "name": "iOS 26 Emoji",
+  "description": "استبدل إيموجيات Discord بصور iOS 26 بدون تغيير خط النص",
+  "authors": [
+    {
+      "name": "qassimtawfiq",
+      "id": "0"
+    }
+  ],
+  "main": "index.js",
+  "revenge": {
+    "icon": "FriendsIcon"
+  },
+  "hash": "c0c82c8387baf8d78254c2b58b0abd53ec29465fdcf129cbcbe5ddcc864481b1"
 }
