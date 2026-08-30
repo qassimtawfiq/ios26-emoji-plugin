@@ -35,13 +35,6 @@ var $ = (() => {
   ));
   var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-  // vendetta:@vendetta/metro
-  var require_metro = __commonJS({
-    "vendetta:@vendetta/metro"(exports, module) {
-      module.exports = vendetta.metro;
-    }
-  });
-
   // vendetta:@vendetta/patcher
   var require_patcher = __commonJS({
     "vendetta:@vendetta/patcher"(exports, module) {
@@ -49,10 +42,10 @@ var $ = (() => {
     }
   });
 
-  // vendetta:@vendetta/metro/common
-  var require_common = __commonJS({
-    "vendetta:@vendetta/metro/common"(exports, module) {
-      module.exports = vendetta.metro.common;
+  // vendetta:@vendetta/metro
+  var require_metro = __commonJS({
+    "vendetta:@vendetta/metro"(exports, module) {
+      module.exports = vendetta.metro;
     }
   });
 
@@ -62,59 +55,38 @@ var $ = (() => {
     onLoad: () => onLoad,
     onUnload: () => onUnload
   });
-  var import_metro = __toESM(require_metro());
   var import_patcher = __toESM(require_patcher());
-  var import_common = __toESM(require_common());
-  var FONT_URL = "https://github.com/qassimtawfiq/ios26-emoji-plugin/releases/download/v1.0/iOS.26.4.Unicode.17.ttf";
-  var FONT_FAMILY = "iOS26Emoji";
-  var MessageMarkupRenderer = (0, import_metro.findByProps)("renderMessageMarkupToAST");
-  var EMOJI_RE = /\p{Emoji}/u;
+  var import_metro = __toESM(require_metro());
+  var GITHUB_USER = "qassimtawfiq";
+  var GITHUB_REPO = "ios26-emoji-plugin";
+  var BRANCH = "ios26_plugin";
+  function getIos26Url(hexCode) {
+    const code = hexCode.replace(/-/g, "_");
+    return `https://raw.githubusercontent.com/${GITHUB_USER}/${GITHUB_REPO}/${BRANCH}/emoji_u${code}.png`;
+  }
+  var EmojiModule = (0, import_metro.findByProps)("getEmojiURL");
   var patches = [];
   function onLoad() {
-    try {
-      import_common.ReactNative.Font?.loadAsync?.({ [FONT_FAMILY]: { uri: FONT_URL } });
-    } catch (e) {
+    if (!EmojiModule) {
+      console.error("[iOS26Emoji] EmojiModule not found!");
+      return;
     }
-    patches.push((0, import_patcher.after)(
-      "renderMessageMarkupToAST",
-      MessageMarkupRenderer,
-      (_, ret) => {
-        const branch = (x, isHeading) => {
-          const jumboableChain = [];
-          const content = [];
-          for (const y of x.content) {
-            const guh = y.type === "emoji" ? { type: "text", content: y.surrogate } : y;
-            if (Array.isArray(y.content)) guh.content = branch(y, true);
-            if ((y.type === "emoji" || y.type === "customEmoji" || y.type === "text" && y.content?.match(/^\s*$/)) && y.jumboable && !isHeading) {
-              if (y.type !== "text") {
-                delete guh.jumboable;
-                jumboableChain.push(guh);
-              }
-            } else {
-              if (jumboableChain.length > 0)
-                content.push({ type: "heading", level: 1, content: jumboableChain });
-              jumboableChain.length = 0;
-              content.push(guh);
-            }
-          }
-          if (jumboableChain.length > 0)
-            content.push({ type: "heading", level: 1, content: jumboableChain });
-          return content;
-        };
-        ret.content = branch(ret, false);
-      }
-    ));
-    patches.push((0, import_patcher.before)("render", import_common.ReactNative.Text, ([props]) => {
-      if (!props) return;
-      const hasEmoji = (s) => typeof s === "string" && EMOJI_RE.test(s);
-      if (Array.isArray(props.children) ? props.children.some(hasEmoji) : hasEmoji(props.children)) {
-        props.style = { ...import_common.ReactNative.StyleSheet.flatten(props.style) || {}, fontFamily: FONT_FAMILY };
-      }
-    }));
+    patches.push(
+      (0, import_patcher.after)("getEmojiURL", EmojiModule, (args, res) => {
+        if (!res || typeof res !== "string") return res;
+        const match = res.match(/emoji[_-]([0-9a-f-]+)\.png/i);
+        if (!match) return res;
+        const hexCode = match[1];
+        const ios26url = getIos26Url(hexCode);
+        return ios26url;
+      })
+    );
+    console.log("[iOS26Emoji] Loaded \u2713");
   }
   function onUnload() {
     patches.forEach((p) => p());
     patches.length = 0;
+    console.log("[iOS26Emoji] Unloaded");
   }
   return __toCommonJS(index_exports);
 })();
