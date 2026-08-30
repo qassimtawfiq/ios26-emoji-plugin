@@ -7,7 +7,7 @@
 			"id": "0"
 		}
 	],
-	"main": "index.js",
+	"main": "./index.js",
 	"revenge": {
 		"icon": "FriendsIcon"
 	}
