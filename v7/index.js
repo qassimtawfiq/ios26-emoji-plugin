@@ -33,6 +33,21 @@
       if (typeof unpatch === "function") unpatches.push(unpatch);
       return;
     }
+    const jsUpdateModule = metro.findByProps && metro.findByProps("updateRows");
+    if (jsUpdateModule && typeof jsUpdateModule.updateRows === "function") {
+      diagnostic.bridge = "metro.findByProps(updateRows)";
+      const unpatch = patcher.before("updateRows", jsUpdateModule, (args) => {
+        try {
+          diagnostic.updateRowsCalls++;
+          const value = args[0];
+          const rows = value && value.rows && (Array.isArray(value.rows) ? value.rows : value.rows.rows);
+          inspectRows(rows);
+        } catch (error) { recordError(error); }
+      });
+      if (typeof unpatch === "function") unpatches.push(unpatch);
+      return;
+    }
+
     const rowManager = metro.findByName && metro.findByName("RowManager", false);
     if (rowManager && rowManager.prototype && typeof rowManager.prototype.generate === "function") {
       diagnostic.bridge = "RowManager.generate";
