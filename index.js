@@ -3,11 +3,9 @@
 
   const patcher = vendetta.patcher;
   const metro = vendetta.metro;
-  const ReactNative = metro.common?.ReactNative;
+  const RNChatModule = getNativeModule("NativeChatModule", "DCDChatManager");
+  const BASE_URL = "https://qassimtawfiq.github.io/ios26-emoji-plugin/emoji/";
   const unpatches = [];
-  const IOS_FONT_FAMILY = "iOS26Emoji";
-  const IOS_FONT_URL = "https://github.com/qassimtawfiq/ios26-emoji-plugin/releases/download/v1.0/iOS.26.4.Unicode.17.ttf";
-  const EMOJI_ONLY = /^(?:\p{Emoji}|\u200d|\ufe0e|\ufe0f|\u20e3)+$/u;
 
   function getNativeModule(...names) {
     try {
@@ -25,9 +23,11 @@
     return undefined;
   }
 
-  const RNChatModule = getNativeModule("NativeChatModule", "DCDChatManager");
-
   function patchRows(callback) {
+    if (!RNChatModule || typeof RNChatModule.updateRows !== "function") {
+      throw new Error("Discord chat row module was not found");
+    }
+
     return patcher.before("updateRows", RNChatModule, (args) => {
       const rows = JSON.parse(args[1]);
       try {
@@ -39,13 +39,41 @@
     });
   }
 
+  function codepointsFor(value) {
+    return Array.from(value)
+      .map((character) => character.codePointAt(0).toString(16))
+      .join("-");
+  }
+
+  function iosAssetUrl(surrogate) {
+    if (typeof surrogate !== "string" || surrogate.length === 0) return null;
+
+    const codepoints = codepointsFor(surrogate);
+    const group = codepoints.split("-")[0].slice(0, 4);
+    return BASE_URL + group + "/emoji-" + codepoints + ".png";
+  }
+
+  function replaceEmojiRow(row) {
+    const src = iosAssetUrl(row.surrogate);
+    if (!src) return { type: "text", content: row.surrogate };
+
+    return {
+      type: "customEmoji",
+      id: "ios26-" + codepointsFor(row.surrogate),
+      alt: row.surrogate,
+      src,
+      frozenSrc: src,
+      ...(row.jumboable ? { jumboable: true } : {}),
+    };
+  }
+
   function iterate(rows) {
     const content = [];
     let header;
 
     for (const original of rows) {
       let row = original;
-      if (row.type === "emoji") row = { type: "text", content: row.surrogate };
+      if (row.type === "emoji") row = replaceEmojiRow(row);
       if ("content" in row && Array.isArray(row.content)) row.content = iterate(row.content);
       if ("items" in row && Array.isArray(row.items)) row.items = iterate(row.items);
 
@@ -68,29 +96,6 @@
     return content;
   }
 
-  function loadIosFont() {
-    ReactNative?.Font?.loadAsync?.({
-      [IOS_FONT_FAMILY]: { uri: IOS_FONT_URL },
-    });
-  }
-
-  function isEmojiOnly(value) {
-    return typeof value === "string" && value.trim().length > 0 && EMOJI_ONLY.test(value.trim());
-  }
-
-  function patchEmojiText() {
-    if (!ReactNative?.Text) throw new Error("React Native Text module was not found");
-
-    return patcher.before("render", ReactNative.Text, ([props]) => {
-      if (!props) return;
-      const children = Array.isArray(props.children) ? props.children : [props.children];
-      if (!children.some(isEmojiOnly)) return;
-
-      const flattened = ReactNative.StyleSheet?.flatten?.(props.style) || {};
-      props.style = { ...flattened, fontFamily: IOS_FONT_FAMILY };
-    });
-  }
-
   function onLoad() {
     try {
       unpatches.push(patchRows((rows) => {
@@ -100,16 +105,9 @@
           }
         }
       }));
+      console.log("[iOS26Emoji] Loaded. Replacing emoji rows with iOS 26 PNGs.");
     } catch (error) {
-      console.error("[iOS26Emoji] Failed to install row patch", error);
-    }
-
-    try {
-      loadIosFont();
-      unpatches.push(patchEmojiText());
-      console.log("[iOS26Emoji] Loaded Bunny row logic with a scoped iOS emoji font.");
-    } catch (error) {
-      console.error("[iOS26Emoji] Failed to install scoped iOS emoji font", error);
+      console.error("[iOS26Emoji] Failed to install PNG row patch", error);
     }
   }
 
