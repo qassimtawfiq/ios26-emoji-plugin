@@ -1,1 +1,164 @@
-(function(l,f,d,i){"use strict";const o={default:{title:"Default (Discord)",format:e=>`asset:/emoji-${e}.png`,joiner:"-"},ios26:{title:"iOS 26 (iPhone)",format:e=>`https://raw.githubusercontent.com/qassimtawfiq/My-custom-theme-/ios26_plugin/emoji_u${e}.png`,joiner:"_",maintainer:"Apple"},apple:{title:"Apple (iOS 17.4)",format:e=>`https://raw.githubusercontent.com/zhdsmy/apple-emoji/ios-17.4/png/160/emoji_u${e}.png`,joiner:"_",maintainer:"zhdsmy"},twemoji:{title:"Twemoji",format:e=>`https://raw.githubusercontent.com/jdecked/twemoji/main/assets/72x72/${e}.png`,joiner:"-",maintainer:"jdecked",excludeVariation:!0}};function y(){return d.useStorageState(s),i.React.createElement(i.ReactNative.ScrollView,null,i.React.createElement(i.ReactNative.View,{style:{padding:16}},i.React.createElement(i.ReactNative.Text,{style:{color:"#fff",fontSize:16,fontWeight:"bold",marginBottom:12}},"Emoji Pack"),Object.keys(o).map(e=>i.React.createElement(i.ReactNative.TouchableOpacity,{key:e,onPress:()=>{s.emojipack=e},style:{flexDirection:"row",alignItems:"center",padding:12,marginBottom:8,backgroundColor:s.emojipack===e?"#5865F2":"#2B2D31",borderRadius:8}},i.React.createElement(i.ReactNative.Text,{style:{color:"#fff",fontSize:15,flex:1}},o[e].title),o[e].maintainer&&i.React.createElement(i.ReactNative.Text,{style:{color:"#B5BAC1",fontSize:13}},o[e].maintainer)))))}const g=/\p{Emoji_Presentation}|\p{Emoji}\uFE0F/gu,R=new RegExp(`(${g.source})`,g.flags);function p(e){return m().format(e)}function m(){return o[s.emojipack]??o.default}function v(e,r=m()){if(!r.joiner)return e;let a=Array.from(e).map(t=>t.codePointAt(0)?.toString(16)).filter(t=>typeof t=="string");return r.excludeVariation&&(a=a.filter(t=>t!=="fe0f")),a.join(r.joiner)}function j(e,r){const a=e.split(R);for(let t=1;t<a.length;t+=2)a.splice(t,1,r(v(a[t])));return a}function k({emoji:e,src:r=p(e),size:a=16}){return React.createElement(i.ReactNative.Image,{key:`emoji-${e}`,source:{uri:r},resizeMode:"contain",fadeDuration:0,style:{height:a,width:a},vanilla:!0})}const s=d.storage;function E(){o[s.emojipack]||(s.emojipack="ios26")}function S(){const e=[];return e.push(f.instead("Image",i.ReactNative,(r,a)=>{const t=r.slice(),[n]=t;if(!n||n.vanilla)return a(...t);const{source:c}=n;return c?.uri?.startsWith("asset:/emoji-")&&(t[0]={...n,source:{...c,uri:p(c.uri.split("-")[1].split(".")[0])}}),a(...t)})),e.push(f.instead("Text",i.ReactNative,(r,a)=>{const t=r.slice(),[n]=t;if(!n)return a(...t);let c=[];const N=i.ReactNative.StyleSheet.flatten(n.style)??{},h=u=>i.React.createElement(k,{emoji:u,size:N.fontSize});if(Array.isArray(n.children))for(const u of n.children)c.push(...typeof u=="string"?j(u,h):[u]);else c=typeof n.children=="string"?j(n.children,h):[n.children];return t[0]={...n,children:c},a(...t)})),()=>{for(const r of e)r()}}const w=y;return l.onLoad=E,l.onUnload=S,l.settings=w,l.vstorage=s,l})({},revenge-mod.patcher,revenge-mod.storage,revenge-mod.metro.common);
+(function(plugin, patcher, storage, common) {
+  "use strict";
+
+  const { React, ReactNative } = common;
+
+  const PACKS = {
+    default: {
+      title: "Default (Discord)",
+      format: e => `asset:/emoji-${e}.png`,
+      joiner: "-"
+    },
+    ios26: {
+      title: "iOS 26 (iPhone)",
+      format: e => `https://raw.githubusercontent.com/qassimtawfiq/My-custom-theme-/ios26_plugin/emoji_u${e}.png`,
+      joiner: "_",
+      maintainer: "Apple"
+    },
+    apple: {
+      title: "Apple (iOS 17.4)",
+      format: e => `https://raw.githubusercontent.com/zhdsmy/apple-emoji/ios-17.4/png/160/emoji_u${e}.png`,
+      joiner: "_",
+      maintainer: "zhdsmy"
+    },
+    twemoji: {
+      title: "Twemoji",
+      format: e => `https://raw.githubusercontent.com/jdecked/twemoji/main/assets/72x72/${e}.png`,
+      joiner: "-",
+      maintainer: "jdecked",
+      excludeVariation: true
+    }
+  };
+
+  const store = storage.storage;
+
+  function getPack() {
+    return PACKS[store.emojipack] ?? PACKS.ios26;
+  }
+
+  function toHex(emoji) {
+    const pack = getPack();
+    let codes = Array.from(emoji).map(c => c.codePointAt(0).toString(16)).filter(Boolean);
+    if (pack.excludeVariation) codes = codes.filter(c => c !== "fe0f");
+    return codes.join(pack.joiner);
+  }
+
+  function getUrl(emoji) {
+    return getPack().format(toHex(emoji));
+  }
+
+  const EMOJI_RE = /(\p{Emoji_Presentation}|\p{Emoji}\uFE0F)/gu;
+
+  function splitEmoji(text, render) {
+    const parts = text.split(EMOJI_RE);
+    const out = [];
+    for (let i = 0; i < parts.length; i++) {
+      if (i % 2 === 0) {
+        if (parts[i]) out.push(parts[i]);
+      } else {
+        out.push(render(parts[i]));
+      }
+    }
+    return out;
+  }
+
+  function EmojiImage({ emoji, size = 16 }) {
+    return React.createElement(ReactNative.Image, {
+      source: { uri: getUrl(emoji) },
+      style: { width: size, height: size },
+      resizeMode: "contain",
+      fadeDuration: 0,
+      vanilla: true
+    });
+  }
+
+  const unpatchList = [];
+
+  plugin.onLoad = function() {
+    if (!PACKS[store.emojipack]) store.emojipack = "ios26";
+
+    unpatchList.push(
+      patcher.instead("Image", ReactNative, (args, orig) => {
+        const newArgs = args.slice();
+        const props = newArgs[0];
+        if (!props || props.vanilla) return orig(...newArgs);
+        const { source } = props;
+        if (source?.uri?.startsWith("asset:/emoji-")) {
+          const code = source.uri.replace("asset:/emoji-", "").replace(".png", "");
+          newArgs[0] = { ...props, source: { ...source, uri: getUrl(code) } };
+        }
+        return orig(...newArgs);
+      })
+    );
+
+    unpatchList.push(
+      patcher.instead("Text", ReactNative, (args, orig) => {
+        const newArgs = args.slice();
+        const props = newArgs[0];
+        if (!props) return orig(...newArgs);
+        const style = ReactNative.StyleSheet.flatten(props.style) ?? {};
+        const size = style.fontSize ?? 16;
+        const render = e => React.createElement(EmojiImage, { emoji: e, size });
+        let children;
+        if (Array.isArray(props.children)) {
+          children = props.children.flatMap(c => typeof c === "string" ? splitEmoji(c, render) : [c]);
+        } else if (typeof props.children === "string") {
+          children = splitEmoji(props.children, render);
+        } else {
+          children = props.children;
+        }
+        newArgs[0] = { ...props, children };
+        return orig(...newArgs);
+      })
+    );
+  };
+
+  plugin.onUnload = function() {
+    unpatchList.forEach(fn => fn());
+    unpatchList.length = 0;
+  };
+
+  plugin.settings = function Settings() {
+    const [, refresh] = React.useState(0);
+    return React.createElement(
+      ReactNative.ScrollView,
+      null,
+      React.createElement(
+        ReactNative.View,
+        { style: { padding: 16 } },
+        React.createElement(ReactNative.Text, {
+          style: { color: "#fff", fontSize: 16, fontWeight: "bold", marginBottom: 12 }
+        }, "Emoji Pack"),
+        Object.keys(PACKS).map(key =>
+          React.createElement(
+            ReactNative.TouchableOpacity,
+            {
+              key,
+              onPress: () => { store.emojipack = key; refresh(n => n + 1); },
+              style: {
+                flexDirection: "row",
+                alignItems: "center",
+                padding: 12,
+                marginBottom: 8,
+                backgroundColor: store.emojipack === key ? "#5865F2" : "#2B2D31",
+                borderRadius: 8
+              }
+            },
+            React.createElement(ReactNative.Text, {
+              style: { color: "#fff", fontSize: 15, flex: 1 }
+            }, PACKS[key].title),
+            PACKS[key].maintainer && React.createElement(ReactNative.Text, {
+              style: { color: "#B5BAC1", fontSize: 13 }
+            }, PACKS[key].maintainer)
+          )
+        )
+      )
+    );
+  };
+
+})(
+  typeof plugin !== "undefined" ? plugin : {},
+  revenge.patcher,
+  revenge.storage,
+  revenge.metro.common
+);
