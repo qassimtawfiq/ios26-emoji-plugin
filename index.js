@@ -2,48 +2,90 @@
   "use strict";
 
   const patcher = vendetta.patcher;
-  const metro = vendetta.metro;
-  const BASE_URL = "https://raw.githubusercontent.com/qassimtawfiq/ios26-emoji-plugin/main/emoji/";
-  const patches = [];
+  const unpatches = [];
 
-  function findEmojiModule() {
+  function getNativeModule(...names) {
     try {
-      return metro.findByProps("getEmojiURL");
+      const nativeModuleProxy = window.nativeModuleProxy;
+
+      for (const name of names) {
+        if (globalThis.__turboModuleProxy) {
+          const module = globalThis.__turboModuleProxy(name);
+          if (module) return module;
+        }
+
+        if (nativeModuleProxy?.[name]) return nativeModuleProxy[name];
+      }
     } catch {
-      return null;
+      // Continue to the normal plugin error path if native lookup fails.
     }
+
+    return undefined;
   }
 
-  function iosAssetUrl(result) {
-    if (typeof result !== "string") return null;
+  const RNChatModule = getNativeModule("NativeChatModule", "DCDChatManager");
 
-    const match = result.match(/(?:emoji[_-])([0-9a-f]+(?:[-_][0-9a-f]+)*)\.png(?:[?#].*)?$/i);
-    if (!match) return null;
+  function patchRows(callback) {
+    return patcher.before("updateRows", RNChatModule, (args) => {
+      const rows = JSON.parse(args[1]);
 
-    const codepoints = match[1].toLowerCase().replace(/_/g, "-");
-    const filename = "emoji-" + codepoints + ".png";
-    const group = codepoints.split("-")[0].slice(0, 4);
-    return BASE_URL + group + "/" + filename;
+      try {
+        callback(rows);
+      } catch (error) {
+        console.error("[iOS26Emoji] Failed to patch message rows", error);
+      }
+
+      args[1] = JSON.stringify(rows);
+    });
+  }
+
+  function iterate(rows) {
+    const content = [];
+    let header;
+
+    for (const original of rows) {
+      let row = original;
+      if (row.type === "emoji") row = { type: "text", content: row.surrogate };
+      if ("content" in row && Array.isArray(row.content)) row.content = iterate(row.content);
+      if ("items" in row && Array.isArray(row.items)) row.items = iterate(row.items);
+
+      if ("jumboable" in original && original.jumboable && !header) {
+        header = { type: "heading", level: 1, content: [] };
+      }
+      if (
+        (original.type === "emoji" || original.type === "customEmoji") && !original.jumboable
+        && header
+      ) {
+        content.push(header);
+        header = undefined;
+      }
+
+      if (header) header.content.push(row);
+      else content.push(row);
+    }
+
+    if (header) content.push(header);
+    return content;
   }
 
   function onLoad() {
-    const emojiModule = findEmojiModule();
-    if (!emojiModule || typeof emojiModule.getEmojiURL !== "function") {
-      console.error("[iOS26Emoji] Discord emoji URL module was not found");
-      return;
+    try {
+      unpatches.push(patchRows((rows) => {
+        for (const row of rows) {
+          if (row.type === 1 && row.message?.content) {
+            row.message.content = iterate(row.message.content);
+          }
+        }
+      }));
+
+      console.log("[iOS26Emoji] Loaded. Using Bunny-compatible system emoji row logic.");
+    } catch (error) {
+      console.error("[iOS26Emoji] Failed to load", error);
     }
-
-    patches.push(
-      patcher.after("getEmojiURL", emojiModule, (_args, result) => {
-        return iosAssetUrl(result) || result;
-      }),
-    );
-
-    console.log("[iOS26Emoji] Loaded. Using iOS 26 emoji images without changing text fonts.");
   }
 
   function onUnload() {
-    for (const unpatch of patches.splice(0)) {
+    for (const unpatch of unpatches.splice(0)) {
       try {
         unpatch();
       } catch (error) {
