@@ -1,6 +1,6 @@
 {
   "name": "iOS 26 Emoji DEBUG",
-  "description": "iOS 26 Emoji renderer with an in-app diagnostic report",
+  "description": "Non-destructive iOS 26 Emoji diagnostic probe",
   "authors": [
     {
       "name": "qassimtawfiq",
@@ -11,5 +11,5 @@
   "revenge": {
     "icon": "FriendsIcon"
   },
-  "hash": "8a1bc4b30ae42e48b7923ee331ba9c589c8b87d0d8f3ba11b5c075fef63256a2"
+  "hash": "be43984192aa9e5b311e5e116ad5b5b93fc720794c6fc0c98c780ac96da75ca5"
 }
