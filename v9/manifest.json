@@ -1,0 +1,15 @@
+{
+  "name": "iOS 26 Emoji",
+  "description": "Install iOS 26 emoji through the native font-file fallback",
+  "authors": [
+    {
+      "name": "qassimtawfiq",
+      "id": "0"
+    }
+  ],
+  "main": "index.js",
+  "revenge": {
+    "icon": "FriendsIcon"
+  },
+  "hash": "af6b5d90709447e5b761291942064735ed711205b147667b84d576daa00d0755"
+}
