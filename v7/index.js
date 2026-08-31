@@ -49,11 +49,9 @@
     diagnostic.lastCodepoints = codepoints;
     diagnostic.lastAssetUrl = src || "missing";
     if (!src) { diagnostic.missingAssets++; return node; }
-    const id = syntheticIdFor(codepoints);
-    IOS_URLS_BY_ID[id] = src;
     diagnostic.emojiReplaced++;
-    if (diagnostic.sampleEmoji.length < 5) diagnostic.sampleEmoji.push({ codepoints, src, id });
-    return { type: "customEmoji", id, name: emojiNameFor(node.surrogate), alt: emojiNameFor(node.surrogate), src, frozenSrc: src, 2: src, 3: src, ...(node.jumboable ? { jumboable: true } : {}) };
+    if (diagnostic.sampleEmoji.length < 5) diagnostic.sampleEmoji.push({ codepoints, src });
+    return { type: "customEmoji", alt: emojiNameFor(node.surrogate), src, frozenSrc: src, 2: src, 3: src, ...(node.jumboable ? { jumboable: true } : {}) };
   }
   function transformNode(node) {
     if (!node || typeof node !== "object") return node;
