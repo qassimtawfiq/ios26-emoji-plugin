@@ -1,0 +1,8 @@
+{
+  "name": "iOS 26 Emoji Recovery Fixed",
+  "description": "Restore the selected Revenge font and remove the iOS 26 override",
+  "authors": [{ "name": "qassimtawfiq", "id": "0" }],
+  "main": "index.js",
+  "revenge": { "icon": "FriendsIcon" },
+  "hash": "c48661faf5bfceb90e8cff3430c8797967fe92c6df752a0946400e5ffb2835f7"
+}
