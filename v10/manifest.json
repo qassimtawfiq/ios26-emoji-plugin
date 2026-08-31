@@ -1,0 +1,8 @@
+{
+  "name": "iOS 26 Emoji",
+  "description": "Install iOS 26 emoji and reload the native font patch once",
+  "authors": [{ "name": "qassimtawfiq", "id": "0" }],
+  "main": "index.js",
+  "revenge": { "icon": "FriendsIcon" },
+  "hash": "db57ef947aec8d38699f84e8e41f385b15e312b59ed08c785073624184b8cd51"
+}
