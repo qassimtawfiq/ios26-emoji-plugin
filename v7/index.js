@@ -39,8 +39,8 @@
       const unpatch = patcher.before("updateRows", jsUpdateModule, (args) => {
         try {
           diagnostic.updateRowsCalls++;
-          const value = args[0];
-          const rows = value && value.rows && (Array.isArray(value.rows) ? value.rows : value.rows.rows);
+          const value = args[1];
+          const rows = value && value.rows;
           inspectRows(rows);
         } catch (error) { recordError(error); }
       });
