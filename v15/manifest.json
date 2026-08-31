@@ -1,0 +1,8 @@
+{
+  "name": "iOS Emoji Font Family Probe",
+  "description": "Read-only diagnostic for Revenge text and emoji font families",
+  "authors": [{ "name": "qassimtawfiq", "id": "0" }],
+  "main": "index.js",
+  "revenge": { "icon": "FriendsIcon" },
+  "hash": "02b99820855581fd93abd8e41c669ad32b2d8921e693fd24c7fff9ddfcf1b2a3"
+}
