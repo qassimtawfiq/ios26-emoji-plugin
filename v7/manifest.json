@@ -1,6 +1,6 @@
 {
-  "name": "iOS 26 Emoji DEBUG",
-  "description": "Non-destructive iOS 26 Emoji diagnostic probe",
+  "name": "iOS 26 Emoji",
+  "description": "Render Unicode emoji with iOS 26 artwork through Discord's message bridge",
   "authors": [
     {
       "name": "qassimtawfiq",
@@ -11,5 +11,5 @@
   "revenge": {
     "icon": "FriendsIcon"
   },
-  "hash": "f5730b59a23b98fc02d40236fff0f74f6f5d2ac54bbf62ccefd62231bc743b28"
+  "hash": "beaf98537e94dc74488b2513538bdaa97937bb6418822c9e1084d2f101db787d"
 }
