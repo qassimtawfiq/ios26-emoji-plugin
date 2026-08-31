@@ -1,0 +1,8 @@
+{
+  "name": "iOS 26 Emoji Theme Merge",
+  "description": "Preserve the selected theme font map and add iOS 26 emoji without changing the theme",
+  "authors": [{ "name": "qassimtawfiq", "id": "0" }],
+  "main": "index.js",
+  "revenge": { "icon": "FriendsIcon" },
+  "hash": "3e206a701dcb57847f74cad82862e7eea36948dc437b2ed3296a37ecc8a2723a"
+}
