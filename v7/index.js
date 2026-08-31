@@ -3,7 +3,7 @@
   const patcher = vendetta.patcher;
   const metro = vendetta.metro;
   const FONT_JSON_URL = "https://raw.githubusercontent.com/qassimtawfiq/ios26-emoji-plugin/main/font.json";
-  const diagnostic = { loaded: false, bridge: "not checked", updateRowsCalls: 0, rowsSeen: 0, messagesSeen: 0, emojiSeen: 0, emojiReplaced: 0, missingAssets: 0, fontApiFound: false, fontInstalled: false, fontSelected: false, fontError: "", sampleTypes: [], sampleEmoji: [], lastCodepoints: "", lastAssetUrl: "", resolverFound: false, resolverCalls: 0, resolverMapped: 0, customRendererFound: false, customRendererSeen: 0, customRendererInjected: 0, lastRendererType: "", errors: [] };
+  const diagnostic = { loaded: false, bridge: "not checked", updateRowsCalls: 0, rowsSeen: 0, messagesSeen: 0, emojiSeen: 0, emojiReplaced: 0, missingAssets: 0, fontApiFound: false, fontInstallApiFound: false, fontSelectApiFound: false, fontModulePath: "", fontInstalled: false, fontSelected: false, fontError: "", sampleTypes: [], sampleEmoji: [], lastCodepoints: "", lastAssetUrl: "", resolverFound: false, resolverCalls: 0, resolverMapped: 0, customRendererFound: false, customRendererSeen: 0, customRendererInjected: 0, lastRendererType: "", errors: [] };
   const unpatches = [];
   function recordError(error) {
     const message = String(error && (error.stack || error.message) || error).slice(0, 600);
@@ -22,26 +22,66 @@
       }
     }
   }
+  function findFontModules() {
+    const found = [];
+    const seen = [];
+    const add = (module, path) => {
+      if (!module || seen.indexOf(module) !== -1) return;
+      seen.push(module);
+      found.push({ module, path });
+    };
+    const paths = [
+      "src/lib/addons/fonts/index.ts",
+      "lib/addons/fonts/index.ts",
+      "src/lib/addons/fonts/index",
+      "lib/addons/fonts/index",
+      "@lib/addons/fonts",
+      "lib/addons/fonts"
+    ];
+    for (const path of paths) {
+      try { if (metro.findByFilePath) add(metro.findByFilePath(path), path); } catch (error) { recordError(error); }
+      try { if (metro.findByFilePath) add(metro.findByFilePath(path, true), path + "#default"); } catch (error) { recordError(error); }
+    }
+    for (const prop of ["installFont", "selectFont", "saveFont"]) {
+      try {
+        const modules = metro.findByPropsAll && metro.findByPropsAll(prop);
+        if (Array.isArray(modules)) for (const module of modules) add(module, "findByPropsAll(" + prop + ")");
+      } catch (error) { recordError(error); }
+    }
+    return found;
+  }
+
   async function installFontPack() {
+    const candidates = findFontModules();
     let installApi = null;
     let selectApi = null;
-    try { installApi = metro.findByProps && metro.findByProps("installFont"); } catch (error) { recordError(error); }
-    try { selectApi = metro.findByProps && metro.findByProps("selectFont"); } catch (error) { recordError(error); }
-    const canInstall = !!(installApi && typeof installApi.installFont === "function");
-    const canSelect = !!(selectApi && typeof selectApi.selectFont === "function");
-    diagnostic.fontApiFound = canInstall || canSelect;
+    let modulePath = "";
+    for (const candidate of candidates) {
+      if (!installApi && candidate.module && typeof candidate.module.installFont === "function") {
+        installApi = candidate.module;
+        modulePath = candidate.path;
+      }
+      if (!selectApi && candidate.module && typeof candidate.module.selectFont === "function") {
+        selectApi = candidate.module;
+        if (!modulePath) modulePath = candidate.path;
+      }
+    }
+    diagnostic.fontInstallApiFound = !!installApi;
+    diagnostic.fontSelectApiFound = !!selectApi;
+    diagnostic.fontApiFound = diagnostic.fontInstallApiFound || diagnostic.fontSelectApiFound;
+    diagnostic.fontModulePath = modulePath;
     if (!diagnostic.fontApiFound) return;
 
     try {
       const fontName = "iOS 26 Emoji";
       const fonts = (selectApi && selectApi.fonts) || (installApi && installApi.fonts);
-      if (canSelect && fonts && fonts[fontName]) {
+      if (selectApi && fonts && fonts[fontName]) {
         await selectApi.selectFont(fontName);
         diagnostic.fontInstalled = true;
         diagnostic.fontSelected = true;
         return;
       }
-      if (!canInstall) return;
+      if (!installApi) return;
       await installApi.installFont(FONT_JSON_URL, true);
       diagnostic.fontInstalled = true;
       diagnostic.fontSelected = true;
