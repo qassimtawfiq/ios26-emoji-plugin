@@ -1,0 +1,8 @@
+{
+  "name": "iOS Emoji TextStyle Probe",
+  "description": "Read-only probe for Revenge TextStyleSheet font families",
+  "authors": [{ "name": "qassimtawfiq", "id": "0" }],
+  "main": "index.js",
+  "revenge": { "icon": "FriendsIcon" },
+  "hash": "785f20d15d5483de04d521c901647fc8b890bda95efb6dae462ed9a78afb72d6"
+}
