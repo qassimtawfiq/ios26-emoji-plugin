@@ -23,18 +23,26 @@
     }
   }
   async function installFontPack() {
+    let installApi = null;
+    let selectApi = null;
+    try { installApi = metro.findByProps && metro.findByProps("installFont"); } catch (error) { recordError(error); }
+    try { selectApi = metro.findByProps && metro.findByProps("selectFont"); } catch (error) { recordError(error); }
+    const canInstall = !!(installApi && typeof installApi.installFont === "function");
+    const canSelect = !!(selectApi && typeof selectApi.selectFont === "function");
+    diagnostic.fontApiFound = canInstall || canSelect;
+    if (!diagnostic.fontApiFound) return;
+
     try {
-      const fontApi = metro.findByProps && metro.findByProps("installFont", "selectFont");
-      diagnostic.fontApiFound = !!fontApi;
-      if (!fontApi) return;
       const fontName = "iOS 26 Emoji";
-      if (fontApi.fonts && fontApi.fonts[fontName]) {
-        await fontApi.selectFont(fontName);
+      const fonts = (selectApi && selectApi.fonts) || (installApi && installApi.fonts);
+      if (canSelect && fonts && fonts[fontName]) {
+        await selectApi.selectFont(fontName);
         diagnostic.fontInstalled = true;
         diagnostic.fontSelected = true;
         return;
       }
-      await fontApi.installFont(FONT_JSON_URL, true);
+      if (!canInstall) return;
+      await installApi.installFont(FONT_JSON_URL, true);
       diagnostic.fontInstalled = true;
       diagnostic.fontSelected = true;
     } catch (error) {
@@ -87,7 +95,7 @@
         const unpatch = patcher.before("getEmojiURL", emojiModule, (args) => {
           diagnostic.resolverCalls++;
           const emoji = args[0];
-          const mapped = emoji && emoji.id && IOS_URLS_BY_ID[String(emoji.id)];
+          const mapped = emoji && emoji.id && typeof IOS_URLS_BY_ID !== "undefined" && IOS_URLS_BY_ID[String(emoji.id)];
           if (mapped && emoji && typeof emoji === "object") args[0] = { ...emoji, src: mapped, frozenSrc: mapped, 2: mapped, 3: mapped };
           if (mapped) diagnostic.resolverMapped++;
         });
@@ -98,7 +106,6 @@
   function onLoad() {
     diagnostic.loaded = true;
     try { installProbe(); } catch (error) { recordError(error); }
-    try { const rendererPatch = patchReactEmojiRenderer(); if (typeof rendererPatch === "function") unpatches.push(rendererPatch); } catch (error) { recordError(error); }
     try { inspectResolver(); } catch (error) { recordError(error); }
     try { installFontPack(); } catch (error) { recordError(error); }
     try { console.log("[iOS26Emoji DEBUG] Probe loaded", diagnostic); } catch {}
