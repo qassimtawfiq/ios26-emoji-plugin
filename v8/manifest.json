@@ -1,0 +1,15 @@
+{
+  "name": "iOS 26 Emoji",
+  "description": "Use the native Revenge font system to render iOS 26 emoji",
+  "authors": [
+    {
+      "name": "qassimtawfiq",
+      "id": "0"
+    }
+  ],
+  "main": "index.js",
+  "revenge": {
+    "icon": "FriendsIcon"
+  },
+  "hash": "70eedf2d86e8dc7db70e1aea59f5664ae601cf8485dd737f05b1ebcdda693c57"
+}
