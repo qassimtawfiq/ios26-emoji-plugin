@@ -1,6 +1,6 @@
 {
   "name": "iOS 26 Emoji",
-  "description": "Render Unicode emoji with iOS 26 artwork through Discord's message bridge",
+  "description": "Render Unicode emoji with iOS 26 artwork through Discord's message and React renderers",
   "authors": [
     {
       "name": "qassimtawfiq",
@@ -11,5 +11,5 @@
   "revenge": {
     "icon": "FriendsIcon"
   },
-  "hash": "75613406fe6ac1fa488284251a1f5b8adbf2a4d9d9ba4db90174d67b19cc0c56"
+  "hash": "d19f414110900da6d917aa09e7b708fc35a33bb4e950b2ffc33d322026de6025"
 }
