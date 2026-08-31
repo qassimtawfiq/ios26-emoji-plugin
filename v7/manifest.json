@@ -1,6 +1,6 @@
 {
   "name": "iOS 26 Emoji",
-  "description": "Render Unicode emoji with iOS 26 artwork through Discord's message and React renderers",
+  "description": "Use the native Revenge font system to render iOS 26 emoji",
   "authors": [
     {
       "name": "qassimtawfiq",
@@ -11,5 +11,5 @@
   "revenge": {
     "icon": "FriendsIcon"
   },
-  "hash": "d19f414110900da6d917aa09e7b708fc35a33bb4e950b2ffc33d322026de6025"
+  "hash": "e2a157b92f5c07537a16c2b96732ca48fe149d18b06e56f272483922ce8f4eea"
 }
