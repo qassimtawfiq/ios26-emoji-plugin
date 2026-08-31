@@ -4,7 +4,7 @@
   const metro = vendetta.metro;
   const BASE_URL = "https://raw.githubusercontent.com/qassimtawfiq/ios26-emoji-plugin/main/emoji/";
   const IOS_URLS_BY_ID = Object.create(null);
-  const diagnostic = { loaded: false, bridge: "not checked", updateRowsCalls: 0, rowsSeen: 0, messagesSeen: 0, emojiSeen: 0, emojiReplaced: 0, missingAssets: 0, sampleTypes: [], sampleEmoji: [], lastCodepoints: "", lastAssetUrl: "", resolverFound: false, resolverCalls: 0, resolverMapped: 0, errors: [] };
+  const diagnostic = { loaded: false, bridge: "not checked", updateRowsCalls: 0, rowsSeen: 0, messagesSeen: 0, emojiSeen: 0, emojiReplaced: 0, missingAssets: 0, sampleTypes: [], sampleEmoji: [], lastCodepoints: "", lastAssetUrl: "", resolverFound: false, resolverCalls: 0, resolverMapped: 0, customRendererFound: false, customRendererSeen: 0, customRendererInjected: 0, lastRendererType: "", errors: [] };
   const unpatches = [];
   function recordError(error) {
     const message = String(error && (error.stack || error.message) || error).slice(0, 600);
@@ -51,7 +51,7 @@
     if (!src) { diagnostic.missingAssets++; return node; }
     diagnostic.emojiReplaced++;
     if (diagnostic.sampleEmoji.length < 5) diagnostic.sampleEmoji.push({ codepoints, src });
-    return { type: "customEmoji", alt: emojiNameFor(node.surrogate), src, frozenSrc: src, 2: src, 3: src, ...(node.jumboable ? { jumboable: true } : {}) };
+    return { type: "customEmoji", alt: emojiNameFor(node.surrogate), surrogate: node.surrogate, src, frozenSrc: src, 2: src, 3: src, ...(node.jumboable ? { jumboable: true } : {}) };
   }
   function transformNode(node) {
     if (!node || typeof node !== "object") return node;
@@ -64,6 +64,37 @@
   function transformRows(rows) {
     if (!Array.isArray(rows)) return;
     for (const row of rows) transformNode(row);
+  }
+
+  function surrogateFromNode(node) {
+    if (!node) return null;
+    if (typeof node.surrogate === "string" && node.surrogate) return node.surrogate;
+    if (typeof node.alt !== "string" || !node.alt) return null;
+    if (/[^\x00-\x7f]/.test(node.alt)) return node.alt;
+    try {
+      const unicodeModule = metro.findByProps && metro.findByProps("convertNameToSurrogate");
+      const surrogate = unicodeModule && unicodeModule.convertNameToSurrogate && unicodeModule.convertNameToSurrogate(node.alt);
+      if (typeof surrogate === "string" && surrogate) return surrogate;
+    } catch (error) { recordError(error); }
+    return null;
+  }
+  function patchReactEmojiRenderer() {
+    const React = metro.common && metro.common.React;
+    if (!React || typeof React.createElement !== "function") return null;
+    diagnostic.customRendererFound = true;
+    return patcher.before("createElement", React, (args) => {
+      const type = args[0];
+      const props = args[1];
+      const typeName = String(type && (type.displayName || type.name) || "");
+      diagnostic.lastRendererType = typeName;
+      if (!typeName.toLowerCase().includes("markupcustomemoji") || !props || !props.node || props.node.src) return;
+      diagnostic.customRendererSeen++;
+      const surrogate = surrogateFromNode(props.node);
+      const src = surrogate && assetUrlForCodepoints(codepointsFor(surrogate));
+      if (!src) return;
+      diagnostic.customRendererInjected++;
+      args[1] = { ...props, node: { ...props.node, src, frozenSrc: src, 2: src, 3: src } };
+    });
   }
 
   function installProbe() {
@@ -122,6 +153,7 @@
   function onLoad() {
     diagnostic.loaded = true;
     try { installProbe(); } catch (error) { recordError(error); }
+    try { const rendererPatch = patchReactEmojiRenderer(); if (typeof rendererPatch === "function") unpatches.push(rendererPatch); } catch (error) { recordError(error); }
     try { inspectResolver(); } catch (error) { recordError(error); }
     try { console.log("[iOS26Emoji DEBUG] Probe loaded", diagnostic); } catch {}
   }
